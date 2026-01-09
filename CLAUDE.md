@@ -111,10 +111,11 @@ SENDER_NAME=GPTko AI사업팀
 - [x] Python 크롤링 환경 세팅
 - [x] 사람인 크롤러
 - [ ] 로켓펀치 크롤러
-- [ ] 원티드 크롤러
-- [x] AI 파싱 (Gemini)
+- [x] 원티드 크롤러 (API 기반)
+- [x] AI 파싱 (Gemini 3 Flash Preview)
 - [x] 크롤링 데이터 → Supabase 연동
 - [x] 수집 설정 UI (소스 선택, 일일 한도)
+- [x] 수집 이력 탭 (기업 관리 페이지 내)
 
 #### Phase 2: 이메일 개선
 - [ ] Resend 도메인 인증 (gptko.co.kr)
