@@ -127,3 +127,39 @@ class SupabaseStorage:
 
         result = self._request('GET', 'companies', params=params)
         return len(result) > 0 if result else False
+
+    def get_crawler_state(self, source):
+        """
+        크롤러 상태 조회 (마지막 페이지 등)
+        """
+        result = self._request(
+            'GET',
+            'settings',
+            params={'key': f"eq.crawler_{source}", 'select': '*'}
+        )
+        if result and len(result) > 0:
+            return result[0].get('value', {})
+        return {'last_page': 0}
+
+    def save_crawler_state(self, source, state):
+        """
+        크롤러 상태 저장
+        """
+        key = f"crawler_{source}"
+        existing = self._request(
+            'GET',
+            'settings',
+            params={'key': f"eq.{key}", 'select': 'id'}
+        )
+
+        if existing and len(existing) > 0:
+            self._request(
+                'PATCH',
+                f"settings?key=eq.{key}",
+                data={'value': state}
+            )
+        else:
+            self._request('POST', 'settings', data={
+                'key': key,
+                'value': state
+            })

@@ -43,7 +43,12 @@ def run_crawler(source='all', limit=DAILY_LIMIT, keywords=None):
     # 수집 소스별 실행
     crawlers = []
     if source in ['saramin', 'all']:
-        crawlers.append(('saramin', SaraminCrawler()))
+        # 저장된 페이지 상태 로드
+        state = storage.get_crawler_state('saramin')
+        start_page = state.get('last_page', 0) + 1  # 마지막 페이지 다음부터
+        if start_page > 100:  # 100페이지 넘으면 처음부터
+            start_page = 1
+        crawlers.append(('saramin', SaraminCrawler(start_page=start_page)))
     # if source in ['rocketpunch', 'all']:
     #     crawlers.append(('rocketpunch', RocketpunchCrawler()))
     # if source in ['wanted', 'all']:
@@ -117,7 +122,6 @@ def run_crawler(source='all', limit=DAILY_LIMIT, keywords=None):
                         'source': source_name,
                         'priority': 'medium',
                         'send_status': '미발송',
-                        'industry_text': company.get('industry_text'),  # 업종 텍스트
                         'collected_at': datetime.now().isoformat(),  # 수집 시각
                     }
 
@@ -139,6 +143,14 @@ def run_crawler(source='all', limit=DAILY_LIMIT, keywords=None):
                 success=results['success'],
                 fail=results['fail']
             )
+
+            # 크롤러 상태 저장 (마지막 페이지)
+            if hasattr(crawler, 'last_page'):
+                storage.save_crawler_state(source_name, {
+                    'last_page': crawler.last_page,
+                    'last_run': datetime.now().isoformat()
+                })
+                logger.info(f"[{source_name}] 페이지 상태 저장: {crawler.last_page}")
 
         except Exception as e:
             logger.error(f"[{source_name}] 크롤러 오류: {e}")

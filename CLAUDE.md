@@ -25,7 +25,7 @@ c:\Users\jewel\Downloads\coldmail-prd.md
 | Frontend | Next.js 14 (Pages Router), Tailwind CSS |
 | Backend | Next.js API Routes |
 | Database | Supabase (PostgreSQL) |
-| AI | Google Gemini 2.0 Flash |
+| AI | Google Gemini 3.0 Flash |
 | Email | Resend |
 | 크롤링 | Python 3.14 (requests, BeautifulSoup, Gemini HTTP API) |
 
@@ -79,6 +79,11 @@ SENDER_NAME=GPTko AI사업팀
 - 발송 같은 중요 작업은 **확인 팝업** 필수
 - 선택 시 **하단 고정 액션바** 사용 (표 위에 액션바 X)
 - 이모지 사용 금지 (이메일에서 엑박 됨)
+
+### 3.4 Git 커밋 규칙
+- **`.env.local` 절대 커밋 금지** (API 키 노출 위험)
+- 환경변수는 로컬: `.env.local`, 배포: Vercel 대시보드에서 설정
+- `.env.local.example`만 Git에 포함 (예시용)
 
 ---
 
@@ -291,6 +296,14 @@ C:\Projects\coldmail\
 ## 9. 최근 변경 이력
 
 ### 2026-01-09
+- **기업 관리 기능 개선**
+  - 다중 삭제 기능 추가 (체크박스 선택 후 삭제)
+  - CSV 다운로드 기능 추가 (선택/전체 기업 내보내기)
+  - 하단 액션바에 삭제/CSV 다운로드 버튼 추가
+- **크롤러 페이지 순환 로직 추가**
+  - 매번 다음 페이지부터 크롤링 (중복 수집 방지)
+  - 마지막 페이지 상태를 DB(settings)에 저장
+  - 100페이지 넘으면 처음부터 순환
 - **Python 크롤러 모듈 완성** (`scripts/crawler/`)
   - 사람인 크롤러 구현 및 데이터 품질 개선
   - Gemini AI 연락처 추출 (HTTP API 직접 호출)

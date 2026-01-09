@@ -16,7 +16,7 @@ function getGenAI() {
 
 export async function analyzeCompany(company) {
   const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = ai.getGenerativeModel({ model: 'gemini-3.0-flash' });
 
   const prompt = `
 다음 기업을 분석해주세요.
@@ -59,7 +59,7 @@ export async function analyzeCompany(company) {
 
 export async function generateDraft(company, template, demoLink, senderName) {
   const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = ai.getGenerativeModel({ model: 'gemini-3.0-flash' });
 
   const prompt = `
 다음 기업에게 보낼 콜드메일 초안을 생성해주세요.

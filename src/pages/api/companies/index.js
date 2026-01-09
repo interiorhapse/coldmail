@@ -13,6 +13,8 @@ export default async function handler(req, res) {
     return getCompanies(req, res);
   } else if (req.method === 'POST') {
     return createCompany(req, res);
+  } else if (req.method === 'DELETE') {
+    return deleteCompanies(req, res);
   }
 
   return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -142,6 +144,35 @@ async function createCompany(req, res) {
     return res.status(201).json({ success: true, data });
   } catch (error) {
     console.error('Error creating company:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+async function deleteCompanies(req, res) {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '삭제할 기업 ID가 필요합니다.',
+      });
+    }
+
+    const { error } = await supabase
+      .from('companies')
+      .delete()
+      .in('id', ids);
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      message: `${ids.length}개 기업 삭제 완료`,
+      deletedCount: ids.length,
+    });
+  } catch (error) {
+    console.error('Error deleting companies:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }

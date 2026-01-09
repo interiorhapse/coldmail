@@ -18,9 +18,11 @@ from config import CRAWL_DELAY, USER_AGENTS, MAX_RETRIES
 
 
 class SaraminCrawler:
-    def __init__(self):
+    def __init__(self, start_page=1):
         self.base_url = 'https://www.saramin.co.kr'
         self.review_url = 'https://www.saramin.co.kr/zf_user/company-review'
+        self.start_page = start_page
+        self.last_page = start_page
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': random.choice(USER_AGENTS),
@@ -48,30 +50,46 @@ class SaraminCrawler:
             return None
 
     def get_company_list(self, page=1, limit=50):
-        """기업 리뷰 목록에서 기업 링크 수집"""
+        """기업 리뷰 목록에서 기업 링크 수집 (여러 페이지에서)"""
         companies = []
+        collected_csns = set()
+        current_page = page
+        max_pages = page + 5  # 최대 5페이지까지 순환
 
-        # 페이지별 URL (페이지네이션이 있다면)
-        url = f"{self.review_url}?page={page}"
+        while len(companies) < limit and current_page < max_pages:
+            # 페이지별 URL
+            url = f"{self.review_url}?page={current_page}"
+            print(f"[사람인] 페이지 {current_page} 크롤링 중...")
 
-        response = self._request(url)
-        if not response:
-            return companies
+            response = self._request(url)
+            if not response:
+                current_page += 1
+                continue
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+            # CSN 코드가 포함된 링크 추출
+            csn_pattern = re.findall(r'/zf_user/company-review/view\?csn=([^"&]+)', response.text)
+            new_csns = [csn for csn in set(csn_pattern) if csn not in collected_csns]
 
-        # CSN 코드가 포함된 링크 추출
-        csn_pattern = re.findall(r'/zf_user/company-review/view\?csn=([^"&]+)', response.text)
-        csn_codes = list(set(csn_pattern))[:limit]
+            if not new_csns:
+                print(f"[사람인] 페이지 {current_page}에서 새 기업 없음, 다음 페이지로...")
+                current_page += 1
+                continue
 
-        print(f"[사람인] {len(csn_codes)}개 기업 발견")
+            print(f"[사람인] 페이지 {current_page}에서 {len(new_csns)}개 기업 발견")
 
-        for csn in csn_codes:
-            companies.append({
-                'csn': csn,
-                'detail_url': f"{self.base_url}/zf_user/company-review/view?csn={csn}"
-            })
+            for csn in new_csns:
+                if len(companies) >= limit:
+                    break
+                collected_csns.add(csn)
+                companies.append({
+                    'csn': csn,
+                    'detail_url': f"{self.base_url}/zf_user/company-review/view?csn={csn}"
+                })
 
+            current_page += 1
+
+        self.last_page = current_page  # 마지막 페이지 저장
+        print(f"[사람인] 총 {len(companies)}개 기업 수집 (마지막 페이지: {current_page})")
         return companies
 
     def get_company_detail(self, company):
@@ -201,10 +219,10 @@ class SaraminCrawler:
         """전체 수집 프로세스"""
         all_companies = []
 
-        print(f"[사람인] 수집 시작 (한도: {limit})")
+        print(f"[사람인] 수집 시작 (시작 페이지: {self.start_page}, 한도: {limit})")
 
-        # 1. 기업 목록 수집
-        companies = self.get_company_list(page=1, limit=limit)
+        # 1. 기업 목록 수집 (저장된 페이지부터 시작)
+        companies = self.get_company_list(page=self.start_page, limit=limit)
 
         # 2. 각 기업 상세 정보 수집
         for i, company in enumerate(companies):

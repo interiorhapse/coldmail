@@ -13,6 +13,8 @@ export default function CompanyList({
   onRowClick,
   onAnalyze,
   onAddToQueue,
+  onBulkDelete,
+  onCsvDownload,
 }) {
   const allSelected = companies.length > 0 && selectedIds.length === companies.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < companies.length;
@@ -112,6 +114,25 @@ export default function CompanyList({
               {selectedIds.length}개 기업 선택됨
             </span>
             <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+                onClick={() => {
+                  if (window.confirm(`${selectedIds.length}개 기업을 삭제하시겠습니까?`)) {
+                    onBulkDelete(selectedIds);
+                  }
+                }}
+              >
+                삭제
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onCsvDownload}
+              >
+                CSV 다운로드
+              </Button>
               <Button
                 variant="outline"
                 size="lg"

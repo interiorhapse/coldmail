@@ -226,6 +226,67 @@ export default function Companies() {
     }
   };
 
+  const handleBulkDelete = async (ids) => {
+    try {
+      const res = await fetch('/api/companies', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+
+      const result = await res.json();
+      if (!result.success) throw new Error(result.message);
+
+      toast.success(`${ids.length}개 기업 삭제 완료`);
+      setSelectedIds([]);
+      fetchCompanies();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleCsvDownload = () => {
+    const targetCompanies = selectedIds.length > 0
+      ? companies.filter(c => selectedIds.includes(c.id))
+      : companies;
+
+    if (targetCompanies.length === 0) {
+      toast.error('다운로드할 기업이 없습니다.');
+      return;
+    }
+
+    const headers = ['기업명', '업종', '담당자', '직함', '이메일', '전화번호', '웹사이트', '우선순위', '발송상태', 'BM요약', '메모'];
+    const rows = targetCompanies.map(c => [
+      c.name || '',
+      c.industry?.name || '',
+      c.contact_name || '',
+      c.contact_title || '',
+      c.contact_email || '',
+      c.contact_phone || '',
+      c.website || '',
+      c.priority || '',
+      c.send_status || '',
+      c.bm_summary || '',
+      c.memo || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `기업목록_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(`${targetCompanies.length}개 기업 다운로드 완료`);
+  };
+
   const handleEdit = (company) => {
     setSelectedCompany(company);
     setShowDetail(false);
@@ -245,6 +306,9 @@ export default function Companies() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">기업 관리</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleCsvDownload}>
+            CSV 다운로드
+          </Button>
           <Button variant="outline" onClick={() => setShowCsvUpload(true)}>
             CSV 업로드
           </Button>
@@ -299,6 +363,8 @@ export default function Companies() {
         onRowClick={handleRowClick}
         onAnalyze={handleAnalyze}
         onAddToQueue={handleAddToQueue}
+        onBulkDelete={handleBulkDelete}
+        onCsvDownload={handleCsvDownload}
       />
 
       {/* Pagination */}
