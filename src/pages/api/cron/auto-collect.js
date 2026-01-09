@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase';
+import { spawn } from 'child_process';
+import path from 'path';
 
 export default async function handler(req, res) {
   // Vercel Cron 인증 확인
   const authHeader = req.headers.authorization;
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    // 개발 환경에서는 통과
     if (process.env.NODE_ENV === 'production') {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
 
     const settings = settingsData?.value;
 
-    if (!settings?.enabled) {
+    if (!settings?.enabled && req.query.force !== 'true') {
       return res.status(200).json({
         success: true,
         message: '자동 수집이 비활성화되어 있습니다.',
@@ -28,37 +29,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // 수집 로직 (실제 API 연동 필요)
-    const results = {
-      total: 0,
-      success: 0,
-      fail: 0,
-    };
+    // Python 크롤러 실행
+    const crawlerPath = path.join(process.cwd(), 'scripts', 'crawler');
+    const sources = settings?.sources?.join(',') || 'saramin';
+    const limit = settings?.daily_limit || 200;
 
-    // 각 업종별로 수집
-    for (const industryId of settings.industries || []) {
-      try {
-        // TODO: 실제 공공데이터/Apollo API 연동
-        // 현재는 더미 로직
-        const count = settings.count_per_industry || 20;
-
-        // 수집 로그 생성
-        await supabase.from('collection_logs').insert({
-          source: 'auto',
-          industry_id: industryId,
-          total_count: count,
-          success_count: count,
-          fail_count: 0,
-          status: 'completed',
-        });
-
-        results.total += count;
-        results.success += count;
-      } catch (error) {
-        results.fail++;
-        console.error(`Error collecting for industry ${industryId}:`, error);
-      }
-    }
+    const result = await runPythonCrawler(crawlerPath, sources, limit);
 
     // 마지막 수집 시간 업데이트
     await supabase
@@ -67,7 +43,7 @@ export default async function handler(req, res) {
         key: 'last_auto_collect',
         value: {
           executed_at: new Date().toISOString(),
-          result: results,
+          result: result,
         },
         updated_at: new Date().toISOString(),
       }, { onConflict: 'key' });
@@ -75,16 +51,77 @@ export default async function handler(req, res) {
     // 활동 로그
     await supabase.from('activity_logs').insert({
       action: 'collect',
-      description: `자동 수집 완료 (${results.success}건)`,
+      description: `수집 완료 (${result.success}건 성공, ${result.fail}건 실패)`,
     });
 
     return res.status(200).json({
       success: true,
-      message: '자동 수집 완료',
-      results,
+      message: `수집 완료: ${result.success}건 성공`,
+      results: result,
     });
   } catch (error) {
     console.error('Error in auto-collect:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
+}
+
+function runPythonCrawler(crawlerPath, sources, limit) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      'main.py',
+      '--source', sources.includes(',') ? 'all' : sources,
+      '--limit', String(limit),
+    ];
+
+    const python = spawn('python', args, {
+      cwd: crawlerPath,
+      shell: true,
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    python.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log(`[Crawler] ${data}`);
+    });
+
+    python.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error(`[Crawler Error] ${data}`);
+    });
+
+    python.on('close', (code) => {
+      if (code === 0) {
+        // stdout에서 결과 파싱 시도
+        const successMatch = stdout.match(/성공:\s*(\d+)/);
+        const failMatch = stdout.match(/실패:\s*(\d+)/);
+
+        resolve({
+          success: successMatch ? parseInt(successMatch[1]) : 0,
+          fail: failMatch ? parseInt(failMatch[1]) : 0,
+          total: (successMatch ? parseInt(successMatch[1]) : 0) + (failMatch ? parseInt(failMatch[1]) : 0),
+          output: stdout.slice(-500), // 마지막 500자만
+        });
+      } else {
+        reject(new Error(`Python 크롤러 실패 (code: ${code}): ${stderr}`));
+      }
+    });
+
+    python.on('error', (error) => {
+      reject(new Error(`Python 실행 오류: ${error.message}`));
+    });
+
+    // 5분 타임아웃
+    setTimeout(() => {
+      python.kill();
+      resolve({
+        success: 0,
+        fail: 0,
+        total: 0,
+        output: '타임아웃 (5분)',
+        timeout: true,
+      });
+    }, 5 * 60 * 1000);
+  });
 }

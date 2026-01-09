@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Tabs from '@/components/ui/Tabs';
 import AutoCollectSettings from '@/components/settings/AutoCollectSettings';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/Toast';
 import { formatDateTime } from '@/lib/utils';
 
 const tabs = [
@@ -11,10 +13,13 @@ const tabs = [
 ];
 
 export default function Settings() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('collect');
   const [settings, setSettings] = useState({});
   const [industries, setIndustries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [collecting, setCollecting] = useState(false);
+  const [showCollectConfirm, setShowCollectConfirm] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -67,6 +72,32 @@ export default function Settings() {
       [name]: parseInt(value) || value,
     };
     await handleSave({ send_settings: newSettings });
+  };
+
+  const handleCollect = async () => {
+    setCollecting(true);
+    setShowCollectConfirm(false);
+    toast.info('수집을 시작합니다. 잠시 기다려주세요...');
+
+    try {
+      const res = await fetch('/api/cron/auto-collect?force=true');
+      const data = await res.json();
+
+      if (data.success) {
+        if (data.skipped) {
+          toast.info(data.message);
+        } else {
+          toast.success(data.message);
+        }
+        fetchSettings();
+      } else {
+        toast.error(data.message || '수집 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setCollecting(false);
+    }
   };
 
   if (loading) {
@@ -163,31 +194,33 @@ export default function Settings() {
               <h4 className="font-medium text-gray-900 mb-3">수동 실행</h4>
               <div className="flex gap-3">
                 <Button
-                  variant="outline"
-                  onClick={async () => {
-                    if (!confirm('자동 수집을 수동 실행하시겠습니까?')) return;
-                    try {
-                      const res = await fetch('/api/cron/auto-collect');
-                      const data = await res.json();
-                      alert(data.message);
-                      fetchSettings();
-                    } catch (error) {
-                      alert(error.message);
-                    }
-                  }}
+                  onClick={() => setShowCollectConfirm(true)}
+                  disabled={collecting}
+                  className="bg-primary-600 hover:bg-primary-700"
                 >
-                  자동 수집 실행
+                  {collecting ? (
+                    <>
+                      <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                      수집 중...
+                    </>
+                  ) : (
+                    '지금 수집 시작'
+                  )}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={async () => {
-                    if (!confirm('대기열 처리를 수동 실행하시겠습니까?')) return;
                     try {
+                      toast.info('대기열 처리를 시작합니다...');
                       const res = await fetch('/api/cron/process-queue');
                       const data = await res.json();
-                      alert(data.message);
+                      if (data.success) {
+                        toast.success(data.message);
+                      } else {
+                        toast.error(data.message);
+                      }
                     } catch (error) {
-                      alert(error.message);
+                      toast.error(error.message);
                     }
                   }}
                 >
@@ -198,6 +231,17 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* Collect Confirm Modal */}
+      <ConfirmModal
+        isOpen={showCollectConfirm}
+        onClose={() => setShowCollectConfirm(false)}
+        onConfirm={handleCollect}
+        title="기업 정보 수집"
+        message="설정된 소스에서 기업 정보를 수집합니다. 수집에는 몇 분이 소요될 수 있습니다. 진행하시겠습니까?"
+        confirmText="수집 시작"
+        loading={collecting}
+      />
     </div>
   );
 }

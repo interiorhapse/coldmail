@@ -1,0 +1,14 @@
+# ColdMail 크롤러 의존성
+# 설치: pip install -r requirements.txt
+# Python 3.14 호환 - SDK 대신 HTTP API 직접 호출
+
+# 웹 크롤링/HTTP
+requests==2.31.0
+beautifulsoup4==4.12.2
+
+# Selenium (동적 페이지용)
+selenium==4.16.0
+webdriver-manager==4.0.1
+
+# 환경변수
+python-dotenv==1.0.0

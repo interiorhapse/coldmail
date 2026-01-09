@@ -1,7 +1,9 @@
 # ColdMail 프로젝트 컨텍스트
 
 > **중요**: 새 세션 시작 시 이 파일을 반드시 먼저 읽어주세요.
-> 마지막 업데이트: 2026-01-08
+> 마지막 업데이트: 2026-01-09
+>
+> **자동 업데이트**: 작업 완료 시 이 파일과 Git 커밋은 자동으로 반영됩니다.
 
 ---
 
@@ -25,7 +27,7 @@ c:\Users\jewel\Downloads\coldmail-prd.md
 | Database | Supabase (PostgreSQL) |
 | AI | Google Gemini 2.0 Flash |
 | Email | Resend |
-| 크롤링 (예정) | Python (Selenium, BeautifulSoup) |
+| 크롤링 | Python 3.14 (requests, BeautifulSoup, Gemini HTTP API) |
 
 ---
 
@@ -66,7 +68,13 @@ SENDER_NAME=GPTko AI사업팀
 3. 시간 들여서 꼼꼼하게
 4. 엮여 있는 것들 빠짐없이 수정
 
-### 3.2 UX 원칙
+### 3.2 "12" 규칙
+사용자가 **"12"**라고 하면:
+1. **바이브 코딩 개발난이도 고려**
+2. 복잡한 기능은 단순화 제안
+3. 현실적인 구현 방안 우선
+
+### 3.3 UX 원칙
 - confirm/alert 대신 **Toast 알림** 사용 (자동 사라짐)
 - 발송 같은 중요 작업은 **확인 팝업** 필수
 - 선택 시 **하단 고정 액션바** 사용 (표 위에 액션바 X)
@@ -95,11 +103,13 @@ SENDER_NAME=GPTko AI사업팀
 ### 4.2 해야 할 기능 🔲
 
 #### Phase 1: 수집 모듈 (Python)
-- [ ] Python 크롤링 환경 세팅
+- [x] Python 크롤링 환경 세팅
+- [x] 사람인 크롤러
 - [ ] 로켓펀치 크롤러
 - [ ] 원티드 크롤러
-- [ ] 구글 검색 크롤러
-- [ ] 크롤링 데이터 → Supabase 연동
+- [x] AI 파싱 (Gemini)
+- [x] 크롤링 데이터 → Supabase 연동
+- [x] 수집 설정 UI (소스 선택, 일일 한도)
 
 #### Phase 2: 이메일 개선
 - [ ] Resend 도메인 인증 (gptko.co.kr)
@@ -122,6 +132,14 @@ C:\Projects\coldmail\
 ├── public/
 │   └── images/
 │       └── logo.svg          # 기업 로고
+├── scripts/
+│   └── crawler/              # Python 크롤러
+│       ├── main.py           # 메인 실행
+│       ├── config.py         # 설정
+│       ├── run_crawler.bat   # 자동 실행용
+│       ├── sources/          # 수집 소스 (사람인, 로켓펀치, 원티드)
+│       ├── parser/           # AI 파싱
+│       └── storage/          # Supabase 연동
 ├── src/
 │   ├── components/
 │   │   ├── ui/               # 공통 UI 컴포넌트
@@ -271,6 +289,18 @@ C:\Projects\coldmail\
 ---
 
 ## 9. 최근 변경 이력
+
+### 2026-01-09
+- **Python 크롤러 모듈 완성** (`scripts/crawler/`)
+  - 사람인 크롤러 구현 및 데이터 품질 개선
+  - Gemini AI 연락처 추출 (HTTP API 직접 호출)
+  - Supabase 연동 (HTTP REST API)
+  - Python 3.14 호환성 확보 (SDK 대신 HTTP API)
+- 수집 설정 페이지 UI 개선
+  - 수동 수집 버튼 추가
+  - Toast 알림 연동
+- 기업 목록 수집일 시간 표시 (`formatDateTime`)
+- "12" 규칙 추가 (바이브 코딩 난이도 고려)
 
 ### 2026-01-08
 - Toast 알림 시스템 구현

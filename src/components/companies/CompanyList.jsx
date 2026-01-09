@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Table, { Thead, Tbody, Tr, Th, Td, EmptyState } from '@/components/ui/Table';
 import { PriorityBadge, SendStatusBadge } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 
 export default function CompanyList({
   companies,
@@ -95,7 +95,7 @@ export default function CompanyList({
                   <SendStatusBadge status={company.send_status} />
                 </Td>
                 <Td className="text-gray-500">
-                  {formatDate(company.collected_at || company.created_at)}
+                  {formatDateTime(company.collected_at || company.created_at)}
                 </Td>
               </Tr>
             ))

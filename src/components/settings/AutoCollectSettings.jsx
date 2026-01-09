@@ -10,16 +10,27 @@ export default function AutoCollectSettings({
 }) {
   const [formData, setFormData] = useState({
     enabled: false,
-    time: '04:00',
+    time: '02:00',
+    sources: ['saramin', 'rocketpunch', 'wanted'],
     industries: [],
     count_per_industry: 20,
+    daily_limit: 200,
     auto_ai_analysis: true,
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (settings?.auto_collect) {
-      setFormData(settings.auto_collect);
+      const incoming = settings.auto_collect;
+      setFormData({
+        enabled: incoming.enabled ?? false,
+        time: incoming.time ?? '02:00',
+        sources: incoming.sources ?? ['saramin', 'rocketpunch', 'wanted'],
+        industries: incoming.industries ?? [],
+        count_per_industry: incoming.count_per_industry ?? 20,
+        daily_limit: incoming.daily_limit ?? 200,
+        auto_ai_analysis: incoming.auto_ai_analysis ?? true,
+      });
     }
   }, [settings]);
 
@@ -41,6 +52,22 @@ export default function AutoCollectSettings({
       return { ...prev, industries: updated };
     });
   };
+
+  const handleSourceChange = (source) => {
+    setFormData((prev) => {
+      const current = prev.sources || [];
+      const updated = current.includes(source)
+        ? current.filter((s) => s !== source)
+        : [...current, source];
+      return { ...prev, sources: updated };
+    });
+  };
+
+  const sourceOptions = [
+    { id: 'saramin', name: '사람인', desc: '종합 채용 플랫폼' },
+    { id: 'rocketpunch', name: '로켓펀치', desc: '스타트업 특화' },
+    { id: 'wanted', name: '원티드', desc: 'IT/스타트업 채용' },
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,6 +116,55 @@ export default function AutoCollectSettings({
         />
         <p className="text-xs text-gray-500 mt-1">
           매일 지정된 시간에 자동으로 수집됩니다.
+        </p>
+      </div>
+
+      {/* Sources */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          수집 소스
+        </label>
+        <div className="grid grid-cols-3 gap-3">
+          {sourceOptions.map((source) => (
+            <label
+              key={source.id}
+              className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                (formData.sources || []).includes(source.id)
+                  ? 'border-primary-500 bg-primary-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={(formData.sources || []).includes(source.id)}
+                onChange={() => handleSourceChange(source.id)}
+                className="mt-1 rounded border-gray-300 text-primary-600"
+              />
+              <div>
+                <p className="font-medium text-gray-900">{source.name}</p>
+                <p className="text-xs text-gray-500">{source.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Daily Limit */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          일일 수집 한도
+        </label>
+        <input
+          type="number"
+          name="daily_limit"
+          value={formData.daily_limit}
+          onChange={handleChange}
+          min={10}
+          max={500}
+          className="block w-full rounded-lg border border-gray-300 px-3 py-2"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          하루에 수집할 최대 기업 수입니다.
         </p>
       </div>
 
