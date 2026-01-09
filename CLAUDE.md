@@ -25,7 +25,7 @@ c:\Users\jewel\Downloads\coldmail-prd.md
 | Frontend | Next.js 14 (Pages Router), Tailwind CSS |
 | Backend | Next.js API Routes |
 | Database | Supabase (PostgreSQL) |
-| AI | Google Gemini 3.0 Flash |
+| AI | Google Gemini 3 Flash Preview |
 | Email | Resend |
 | 크롤링 | Python 3.14 (requests, BeautifulSoup, Gemini HTTP API) |
 
@@ -296,6 +296,10 @@ C:\Projects\coldmail\
 ## 9. 최근 변경 이력
 
 ### 2026-01-09
+- **원티드 크롤러 추가**
+  - 채용공고 API 기반 기업 정보 수집
+  - 카테고리별 수집 (개발, 마케팅, 경영, 영업, 미디어)
+  - 기업 웹사이트 크롤링으로 연락처 추출
 - **기업 관리 기능 개선**
   - 다중 삭제 기능 추가 (체크박스 선택 후 삭제)
   - CSV 다운로드 기능 추가 (선택/전체 기업 내보내기)

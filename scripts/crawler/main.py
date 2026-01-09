@@ -9,6 +9,7 @@ from datetime import datetime
 
 from config import LOG_DIR, DAILY_LIMIT
 from sources.saramin import SaraminCrawler
+from sources.wanted import WantedCrawler
 from parser.ai_parser import AIParser
 from storage.supabase_client import SupabaseStorage
 
@@ -49,10 +50,17 @@ def run_crawler(source='all', limit=DAILY_LIMIT, keywords=None):
         if start_page > 100:  # 100페이지 넘으면 처음부터
             start_page = 1
         crawlers.append(('saramin', SaraminCrawler(start_page=start_page)))
+
+    if source in ['wanted', 'all']:
+        # 저장된 페이지 상태 로드
+        state = storage.get_crawler_state('wanted')
+        start_page = state.get('last_page', 0) + 1
+        if start_page > 50:  # 50페이지 넘으면 처음부터
+            start_page = 0
+        crawlers.append(('wanted', WantedCrawler(start_page=start_page)))
+
     # if source in ['rocketpunch', 'all']:
     #     crawlers.append(('rocketpunch', RocketpunchCrawler()))
-    # if source in ['wanted', 'all']:
-    #     crawlers.append(('wanted', WantedCrawler()))
 
     for source_name, crawler in crawlers:
         logger.info(f"[{source_name}] 수집 시작...")

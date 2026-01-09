@@ -20,7 +20,7 @@ class AIParser:
         if not GEMINI_API_KEY:
             raise ValueError("Gemini API 키가 없습니다.")
         self.api_key = GEMINI_API_KEY
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key={self.api_key}"
+        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={self.api_key}"
 
     def extract_contacts(self, text, company_name=None):
         """
