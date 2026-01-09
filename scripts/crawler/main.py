@@ -111,18 +111,23 @@ def run_crawler(source='all', limit=DAILY_LIMIT, keywords=None):
                     elif company.get('company_phone'):
                         contact_phone = company['company_phone']
 
+                    # 이메일 없으면 스킵 (DB에 not-null 제약조건)
+                    if not contact_email:
+                        logger.info(f"  이메일 없음, 스킵: {company['name']}")
+                        continue
+
                     # DB 저장 데이터 구성
                     company_data = {
                         'name': company['name'],
                         'website': company.get('website'),
-                        'contact_email': contact_email,  # None이면 null로 저장
+                        'contact_email': contact_email,
                         'contact_name': contact_name or '담당자',
                         'contact_title': contact_title,
                         'contact_phone': contact_phone,
                         'source': source_name,
                         'priority': 'medium',
                         'send_status': '미발송',
-                        'collected_at': datetime.now().isoformat(),  # 수집 시각
+                        'collected_at': datetime.now().isoformat(),
                     }
 
                     # 저장

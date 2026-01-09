@@ -7,6 +7,7 @@ import CompanyList from '@/components/companies/CompanyList';
 import CompanyForm from '@/components/companies/CompanyForm';
 import CompanyDetail from '@/components/companies/CompanyDetail';
 import CsvUpload from '@/components/companies/CsvUpload';
+import CollectionHistory from '@/components/companies/CollectionHistory';
 import { useToast } from '@/components/ui/Toast';
 
 const priorityOptions = [
@@ -40,6 +41,9 @@ export default function Companies() {
 
   // Selection
   const [selectedIds, setSelectedIds] = useState([]);
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'history'
 
   // Modals
   const [showForm, setShowForm] = useState(false);
@@ -301,60 +305,91 @@ export default function Companies() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className={`space-y-6 ${selectedIds.length > 0 ? 'pb-24' : ''}`}>
+    <div className={`space-y-6 ${selectedIds.length > 0 && activeTab === 'list' ? 'pb-24' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">기업 관리</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleCsvDownload}>
-            CSV 다운로드
-          </Button>
-          <Button variant="outline" onClick={() => setShowCsvUpload(true)}>
-            CSV 업로드
-          </Button>
-          <Button onClick={() => { setSelectedCompany(null); setShowForm(true); }}>
-            + 기업 추가
-          </Button>
-        </div>
+        {activeTab === 'list' && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCsvDownload}>
+              CSV 다운로드
+            </Button>
+            <Button variant="outline" onClick={() => setShowCsvUpload(true)}>
+              CSV 업로드
+            </Button>
+            <Button onClick={() => { setSelectedCompany(null); setShowForm(true); }}>
+              + 기업 추가
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Filters */}
-      <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-sm p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Input
-            placeholder="회사명, 담당자, 이메일 검색"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Select
-            value={industryFilter}
-            onChange={(e) => { setIndustryFilter(e.target.value); setPage(1); }}
-            options={industryOptions}
-            placeholder="업종 전체"
-          />
-          <Select
-            value={priorityFilter}
-            onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
-            options={priorityOptions}
-            placeholder="우선순위 전체"
-          />
-          <Select
-            value={sendStatusFilter}
-            onChange={(e) => { setSendStatusFilter(e.target.value); setPage(1); }}
-            options={sendStatusOptions}
-            placeholder="발송상태 전체"
-          />
-          <Button type="submit">검색</Button>
-        </div>
-      </form>
-
-      {/* Stats */}
-      <div className="text-sm text-gray-600">
-        총 {total}개 기업
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4">
+          <button
+            onClick={() => setActiveTab('list')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'list'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            기업 목록
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'history'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            수집 이력
+          </button>
+        </nav>
       </div>
 
-      {/* Company List */}
-      <CompanyList
+      {/* Tab Content */}
+      {activeTab === 'list' ? (
+        <>
+          {/* Filters */}
+          <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <Input
+                placeholder="회사명, 담당자, 이메일 검색"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Select
+                value={industryFilter}
+                onChange={(e) => { setIndustryFilter(e.target.value); setPage(1); }}
+                options={industryOptions}
+                placeholder="업종 전체"
+              />
+              <Select
+                value={priorityFilter}
+                onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
+                options={priorityOptions}
+                placeholder="우선순위 전체"
+              />
+              <Select
+                value={sendStatusFilter}
+                onChange={(e) => { setSendStatusFilter(e.target.value); setPage(1); }}
+                options={sendStatusOptions}
+                placeholder="발송상태 전체"
+              />
+              <Button type="submit">검색</Button>
+            </div>
+          </form>
+
+          {/* Stats */}
+          <div className="text-sm text-gray-600">
+            총 {total}개 기업
+          </div>
+
+          {/* Company List */}
+          <CompanyList
         companies={companies}
         loading={loading}
         selectedIds={selectedIds}
@@ -367,29 +402,33 @@ export default function Companies() {
         onCsvDownload={handleCsvDownload}
       />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            이전
-          </Button>
-          <span className="px-4 py-2 text-sm text-gray-600">
-            {page} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            다음
-          </Button>
-        </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                이전
+              </Button>
+              <span className="px-4 py-2 text-sm text-gray-600">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                다음
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <CollectionHistory />
       )}
 
       {/* Modals */}
